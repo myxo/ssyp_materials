@@ -1,0 +1,24 @@
+" Example .vimrc
+" Copy this file to ~/.vimrc (or source it from your existing .vimrc)
+
+" ---- Tabs as 4 spaces ----
+set tabstop=4       " a tab character displays as 4 columns wide
+set shiftwidth=4    " number of spaces used for each step of (auto)indent
+set softtabstop=4   " number of spaces a <Tab> counts for while editing
+set expandtab       " convert tabs to spaces
+
+" ---- Smart indent ----
+set smartindent     " automatically insert indentation for new lines
+set autoindent       " copy indent from current line when starting a new line
+
+" ---- Highlight search ----
+set hlsearch        " highlight all matches of the last search pattern
+set incsearch        " show matches as you type
+
+" ---- Highlight current line ----
+set cursorline       " highlight the screen line of the cursor
+
+" ---- Disable swap files ----
+set noswapfile
+set nobackup
+set nowritebackup
