@@ -2,7 +2,7 @@
 
 1. 
 ```
-sudo apt install git clangd
+sudo apt install git clangd tree-sitter-cli
 ```
 
 3. Из https://github.com/neovim/neovim/releases берем AppImage 12 версии

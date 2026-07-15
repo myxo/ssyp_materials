@@ -1,14 +1,15 @@
 --[[
 
-  Kickstart Neovim config (Neovim 0.9 version)
+  Kickstart Neovim config (Neovim 0.11 version)
 
   WHERE TO PUT THIS FILE:
     Linux/macOS:  ~/.config/nvim/init.lua
 
   REQUIREMENTS:
-    - Neovim >= 0.9
+    - Neovim >= 0.11 and < 0.12
     - git (used by lazy.nvim to download plugins).
     - a C compiler (gcc/clang), needed by nvim-treesitter to build parsers.
+    - tree-sitter-cli installed and on your $PATH.
     - clangd installed and on your $PATH, for C/C++ language support.
         macOS:   brew install llvm          (or) xcode-select --install
         Ubuntu:  sudo apt install clangd
@@ -115,36 +116,34 @@ require('lazy').setup({
   -- Nicer syntax highlighting
   {
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
+    lazy = false,
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
         ensure_installed = { 'c', 'cpp', 'lua', 'vim', 'vimdoc' },
-        auto_install = true, -- automatically install parser for new filetypes
+        auto_install = true,
         highlight = { enable = true },
         indent = { enable = true },
       })
     end,
   },
 
-  -- nvim-lspconfig: ready-made LSP server configs (needed on Neovim 0.9,
-  -- which doesn't have the newer vim.lsp.config/vim.lsp.enable API)
   {
     'neovim/nvim-lspconfig',
     config = function()
-      -- LSP: clangd (C / C++ / Objective-C)
-      local lspconfig = require('lspconfig')
-      lspconfig.clangd.setup({
+      vim.lsp.config('clangd', {
         cmd = { 'clangd', '--background-index', '--clang-tidy' },
-        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
-        root_dir = lspconfig.util.root_pattern(
+        root_markers = {
           '.clangd',
           '.clang-tidy',
           '.clang-format',
           'compile_commands.json',
           'compile_flags.txt',
-          '.git'
-        ),
+          '.git',
+        },
       })
+      vim.lsp.enable('clangd')
 
       -- Nice-to-have: rounded borders on hover/signature popups
       vim.diagnostic.config({
