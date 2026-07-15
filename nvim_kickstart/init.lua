@@ -18,7 +18,8 @@
         Ubuntu:  sudo apt install ripgrep
 
   On first launch, Neovim will automatically download lazy.nvim and all
-  plugins below. This only happens once.
+  plugins below. This only happens once. If you see a flood of errors,
+  just quit (:q!) and reopen – lazy.nvim needs two passes sometimes.
 
 --]]
 
@@ -88,92 +89,90 @@ vim.opt.rtp:prepend(lazypath)
 -- =====================================================================
 
 require('lazy').setup({
+
   -- Telescope: fuzzy finder for files, text, buffers, etc.
   {
     'nvim-telescope/telescope.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local telescope = require('telescope')
+      telescope.setup({
+        defaults = {
+          file_ignore_patterns = { '%.git/', 'node_modules/', 'build/' },
+        },
+      })
+
+      local tb = require('telescope.builtin')
+      map('n', '<leader>ff', tb.find_files, { desc = 'Telescope: find files' })
+      map('n', '<leader>fg', tb.live_grep, { desc = 'Telescope: live grep (needs ripgrep)' })
+      map('n', '<leader>fb', tb.buffers, { desc = 'Telescope: list open buffers' })
+      map('n', '<leader>fh', tb.help_tags, { desc = 'Telescope: help tags' })
+      map('n', '<leader>fw', tb.grep_string, { desc = 'Telescope: grep word under cursor' })
+      map('n', '<leader>fo', tb.oldfiles, { desc = 'Telescope: recently opened files' })
+    end,
   },
 
-  -- Nicer syntax highlighting (optional but very common)
+  -- Nicer syntax highlighting
   {
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
+    config = function()
+      require('nvim-treesitter.configs').setup({
+        ensure_installed = { 'c', 'cpp', 'lua', 'vim', 'vimdoc' },
+        auto_install = true, -- automatically install parser for new filetypes
+        highlight = { enable = true },
+        indent = { enable = true },
+      })
+    end,
   },
 
   -- nvim-lspconfig: ready-made LSP server configs (needed on Neovim 0.9,
   -- which doesn't have the newer vim.lsp.config/vim.lsp.enable API)
-  { 'neovim/nvim-lspconfig' },
-})
+  {
+    'neovim/nvim-lspconfig',
+    config = function()
+      -- LSP: clangd (C / C++ / Objective-C)
+      local lspconfig = require('lspconfig')
+      lspconfig.clangd.setup({
+        cmd = { 'clangd', '--background-index', '--clang-tidy' },
+        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
+        root_dir = lspconfig.util.root_pattern(
+          '.clangd',
+          '.clang-tidy',
+          '.clang-format',
+          'compile_commands.json',
+          'compile_flags.txt',
+          '.git'
+        ),
+      })
 
--- ---------------------------------------------------------------------
--- Treesitter: better, more accurate syntax highlighting
--- ---------------------------------------------------------------------
-require('nvim-treesitter.configs').setup({
-  ensure_installed = { 'c', 'cpp', 'lua', 'vim', 'vimdoc' },
-  auto_install = true, -- automatically install parser for new filetypes
-  highlight = { enable = true },
-  indent = { enable = true },
-})
+      -- Nice-to-have: rounded borders on hover/signature popups
+      vim.diagnostic.config({
+        virtual_text = true,
+        underline = true,
+        severity_sort = true,
+        float = { border = 'rounded' },
+      })
 
--- ---------------------------------------------------------------------
--- Telescope: see/search files in the current folder and below
--- ---------------------------------------------------------------------
-local telescope = require('telescope')
-telescope.setup({
-  defaults = {
-    file_ignore_patterns = { '%.git/', 'node_modules/', 'build/' },
+      -- LSP keymaps: only set them in buffers that actually have an LSP client attached
+      vim.api.nvim_create_autocmd('LspAttach', {
+        callback = function(ev)
+          local opts = { buffer = ev.buf }
+          map('n', 'gd', vim.lsp.buf.definition, vim.tbl_extend('force', opts, { desc = 'Go to definition' }))
+          map('n', 'gD', vim.lsp.buf.declaration, vim.tbl_extend('force', opts, { desc = 'Go to declaration' }))
+          map('n', 'gr', vim.lsp.buf.references, vim.tbl_extend('force', opts, { desc = 'Go to references' }))
+          map('n', 'gi', vim.lsp.buf.implementation, vim.tbl_extend('force', opts, { desc = 'Go to implementation' }))
+          map('n', 'K', vim.lsp.buf.hover, vim.tbl_extend('force', opts, { desc = 'Hover documentation' }))
+          map('n', '<leader>rn', vim.lsp.buf.rename, vim.tbl_extend('force', opts, { desc = 'Rename symbol' }))
+          map({ 'n', 'v' }, '<leader>ca', vim.lsp.buf.code_action, vim.tbl_extend('force', opts, { desc = 'Code action' }))
+          map('n', '<leader>e', vim.diagnostic.open_float, vim.tbl_extend('force', opts, { desc = 'Show diagnostic' }))
+          map('n', '[d', vim.diagnostic.goto_prev, vim.tbl_extend('force', opts, { desc = 'Previous diagnostic' }))
+          map('n', ']d', vim.diagnostic.goto_next, vim.tbl_extend('force', opts, { desc = 'Next diagnostic' }))
+          map('n', '<leader>cf', function() vim.lsp.buf.format({ async = true }) end,
+            vim.tbl_extend('force', opts, { desc = 'Format buffer' }))
+        end,
+      })
+    end,
   },
-})
 
-local tb = require('telescope.builtin')
-map('n', '<leader>ff', tb.find_files, { desc = 'Telescope: find files' })
-map('n', '<leader>fg', tb.live_grep, { desc = 'Telescope: live grep (needs ripgrep)' })
-map('n', '<leader>fb', tb.buffers, { desc = 'Telescope: list open buffers' })
-map('n', '<leader>fh', tb.help_tags, { desc = 'Telescope: help tags' })
-map('n', '<leader>fw', tb.grep_string, { desc = 'Telescope: grep word under cursor' })
-map('n', '<leader>fo', tb.oldfiles, { desc = 'Telescope: recently opened files' })
-
--- =====================================================================
--- 4. LSP: clangd (C / C++ / Objective-C)
--- =====================================================================
-
-local lspconfig = require('lspconfig')
-lspconfig.clangd.setup({
-  cmd = { 'clangd', '--background-index', '--clang-tidy' },
-  filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
-  root_dir = lspconfig.util.root_pattern(
-    '.clangd',
-    '.clang-tidy',
-    '.clang-format',
-    'compile_commands.json',
-    'compile_flags.txt',
-    '.git'
-  ),
-})
-
--- Nice-to-have: rounded borders on hover/signature popups
-vim.diagnostic.config({
-  virtual_text = true,
-  underline = true,
-  severity_sort = true,
-  float = { border = 'rounded' },
-})
-
--- LSP keymaps: only set them in buffers that actually have an LSP client attached
-vim.api.nvim_create_autocmd('LspAttach', {
-  callback = function(ev)
-    local opts = { buffer = ev.buf }
-    map('n', 'gd', vim.lsp.buf.definition, vim.tbl_extend('force', opts, { desc = 'Go to definition' }))
-    map('n', 'gD', vim.lsp.buf.declaration, vim.tbl_extend('force', opts, { desc = 'Go to declaration' }))
-    map('n', 'gr', vim.lsp.buf.references, vim.tbl_extend('force', opts, { desc = 'Go to references' }))
-    map('n', 'gi', vim.lsp.buf.implementation, vim.tbl_extend('force', opts, { desc = 'Go to implementation' }))
-    map('n', 'K', vim.lsp.buf.hover, vim.tbl_extend('force', opts, { desc = 'Hover documentation' }))
-    map('n', '<leader>rn', vim.lsp.buf.rename, vim.tbl_extend('force', opts, { desc = 'Rename symbol' }))
-    map({ 'n', 'v' }, '<leader>ca', vim.lsp.buf.code_action, vim.tbl_extend('force', opts, { desc = 'Code action' }))
-    map('n', '<leader>e', vim.diagnostic.open_float, vim.tbl_extend('force', opts, { desc = 'Show diagnostic' }))
-    map('n', '[d', vim.diagnostic.goto_prev, vim.tbl_extend('force', opts, { desc = 'Previous diagnostic' }))
-    map('n', ']d', vim.diagnostic.goto_next, vim.tbl_extend('force', opts, { desc = 'Next diagnostic' }))
-    map('n', '<leader>cf', function() vim.lsp.buf.format({ async = true }) end,
-      vim.tbl_extend('force', opts, { desc = 'Format buffer' }))
-  end,
 })
