@@ -1,13 +1,14 @@
 --[[
 
-  Kickstart Neovim config
+  Kickstart Neovim config (Neovim 0.9 version)
 
   WHERE TO PUT THIS FILE:
     Linux/macOS:  ~/.config/nvim/init.lua
 
   REQUIREMENTS:
-    - Neovim >= 0.12 (uses the built-in `vim.pack` plugin manager
-    - git (used by vim.pack to download plugins).
+    - Neovim >= 0.9
+    - git (used by lazy.nvim to download plugins).
+    - a C compiler (gcc/clang), needed by nvim-treesitter to build parsers.
     - clangd installed and on your $PATH, for C/C++ language support.
         macOS:   brew install llvm          (or) xcode-select --install
         Ubuntu:  sudo apt install clangd
@@ -16,9 +17,8 @@
         macOS:   brew install ripgrep
         Ubuntu:  sudo apt install ripgrep
 
-  On first launch, Neovim will automatically download the plugins below
-  (you may see a confirmation prompt — press :w to accept). This only
-  happens once.
+  On first launch, Neovim will automatically download lazy.nvim and all
+  plugins below. This only happens once.
 
 --]]
 
@@ -73,16 +73,42 @@ local map = vim.keymap.set
 map('n', '<Esc>', '<cmd>nohlsearch<CR>', { desc = 'Clear search highlight' })
 
 -- =====================================================================
--- 2. PLUGINS
+-- 2. PLUGIN MANAGER: lazy.nvim (bootstrap)
 -- =====================================================================
 
-vim.pack.add({
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
+if not vim.uv.fs_stat(lazypath) then
+  vim.fn.system({
+    'git',
+    'clone',
+    '--filter=blob:none',
+    'https://github.com/folke/lazy.nvim.git',
+    '--branch=stable',
+    lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
+
+-- =====================================================================
+-- 3. PLUGINS
+-- =====================================================================
+
+require('lazy').setup({
   -- Telescope: fuzzy finder for files, text, buffers, etc.
-  { src = 'https://github.com/nvim-lua/plenary.nvim' }, -- Telescope dependency
-  { src = 'https://github.com/nvim-telescope/telescope.nvim' },
+  {
+    'nvim-telescope/telescope.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+  },
 
   -- Nicer syntax highlighting (optional but very common)
-  { src = 'https://github.com/nvim-treesitter/nvim-treesitter', version = 'master' },
+  {
+    'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
+  },
+
+  -- nvim-lspconfig: ready-made LSP server configs (needed on Neovim 0.9,
+  -- which doesn't have the newer vim.lsp.config/vim.lsp.enable API)
+  { 'neovim/nvim-lspconfig' },
 })
 
 -- ---------------------------------------------------------------------
@@ -114,27 +140,22 @@ map('n', '<leader>fw', tb.grep_string, { desc = 'Telescope: grep word under curs
 map('n', '<leader>fo', tb.oldfiles, { desc = 'Telescope: recently opened files' })
 
 -- =====================================================================
--- 3. LSP: clangd (C / C++ / Objective-C)
+-- 4. LSP: clangd (C / C++ / Objective-C)
 -- =====================================================================
 
--- Define the clangd server config using Neovim's native LSP API
--- (no nvim-lspconfig plugin required).
-vim.lsp.config('clangd', {
+local lspconfig = require('lspconfig')
+lspconfig.clangd.setup({
   cmd = { 'clangd', '--background-index', '--clang-tidy' },
   filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
-  root_markers = {
+  root_dir = lspconfig.util.root_pattern(
     '.clangd',
     '.clang-tidy',
     '.clang-format',
     'compile_commands.json',
     'compile_flags.txt',
-    '.git',
-  },
+    '.git'
+  ),
 })
-
--- Turn it on: Neovim will auto-attach clangd whenever you open a
--- matching filetype inside a project containing one of the root markers.
-vim.lsp.enable('clangd')
 
 -- Nice-to-have: rounded borders on hover/signature popups
 vim.diagnostic.config({
