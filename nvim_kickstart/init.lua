@@ -41,23 +41,17 @@ opt.smartindent = true -- automatic indenting for new lines
 opt.autoindent = true
 
 -- UI
-opt.number = true         -- show line numbers
-opt.relativenumber = true -- ...and relative numbers (great for jumping)
-opt.cursorline = true     -- highlight current line
-opt.signcolumn = 'yes'    -- always show sign column (avoids text shifting)
-opt.termguicolors = true  -- enable 24-bit colors
-opt.scrolloff = 8         -- keep 8 lines visible above/below cursor
-opt.wrap = false          -- don't soft-wrap long lines
+opt.number = true        -- show line numbers
+opt.cursorline = true    -- highlight current line
+opt.signcolumn = 'yes'   -- always show sign column (avoids text shifting)
+opt.termguicolors = true -- enable 24-bit colors
+opt.scrolloff = 8        -- keep 8 lines visible above/below cursor
 
 -- Search
 opt.ignorecase = true -- case-insensitive search...
 opt.smartcase = true  -- ...unless the query has capital letters
 opt.incsearch = true
 opt.hlsearch = true
-
--- Splits
-opt.splitright = true -- vertical splits open to the right
-opt.splitbelow = true -- horizontal splits open below
 
 -- Files
 opt.swapfile = false
