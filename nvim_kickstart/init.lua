@@ -60,7 +60,7 @@ opt.updatetime = 250 -- faster CursorHold / diagnostics popup
 
 -- Show some invisible characters
 opt.list = true
-opt.listchars = { tab = '» ', trailing = '·', nbsp = '␣' }
+opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
 -- Quality-of-life keymaps
 local map = vim.keymap.set
