@@ -10,8 +10,7 @@ sudo apt install git clangd tree-sitter-cli
 wget https://github.com/neovim/neovim/releases/download/v0.12.4/nvim-linux-x86_64.appimage
 ```
 
-4.
-Делаем файл запускаемым
+4. Делаем файл запускаемым
 ```
 chmod u+x nvim-linux-x86_64.appimage
 ```
